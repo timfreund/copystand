@@ -1,7 +1,9 @@
 extern crate gphoto;
 
 use clap::Clap;
+use std::fs;
 use std::path::Path;
+use std::process::Command;
 use rexiv2::Metadata;
 
 #[derive(Clap)]
@@ -27,16 +29,18 @@ fn main() {
     // println!("base_filename: {}", opts.base_filename)
 
 
-    // let mut context = gphoto::Context::new().unwrap();
+    let mut context = gphoto::Context::new().unwrap();
 
-    // let mut camera = gphoto::Camera::autodetect(&mut context).unwrap();
-    // let capture = camera.capture_image(&mut context).unwrap();
-    // // let mut file = gphoto::FileMedia::create(Path::new(&*capture.basename())).unwrap();
-    // let mut file = gphoto::FileMedia::create(Path::new("demofile.raw")).unwrap();
+    let mut camera = gphoto::Camera::autodetect(&mut context).unwrap();
+    let capture = camera.capture_image(&mut context).unwrap();
+    // let mut file = gphoto::FileMedia::create(Path::new(&*capture.basename())).unwrap();
+    let mut file = gphoto::FileMedia::create(Path::new("capture.cr2")).unwrap();
 
-    // camera.download(&mut context, &capture, &mut file).unwrap();
+    camera.download(&mut context, &capture, &mut file).unwrap();
+    Command::new("dcraw").arg("-T").arg("capture.cr2").status();
+    Command::new("convert").arg("capture.tiff").arg("-compress").arg("Zip").arg("final.tiff").status();
 
-    if let Ok(meta) = Metadata::new_from_path("demofile.jpg") {
+    if let Ok(meta) = Metadata::new_from_path("capture.cr2") {
         if let Some(location) = meta.get_gps_info() {
             println!("Location: {:?}", location);
         }
@@ -53,7 +57,7 @@ fn main() {
 
         meta.set_tag_numeric("Exif.Image.PageNumber", 17);
         meta.set_tag_string("Exif.Image.DocumentName", "The Demonstration Document");
-        meta.save_to_file("demofile.jpg").expect("Couldn't save metadata");
+        meta.save_to_file("final.tiff").expect("Couldn't save metadata");
     }
+    fs::remove_file("capture.cr2");
 }
-
